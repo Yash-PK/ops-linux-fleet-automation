@@ -7,11 +7,14 @@ and reboot exercises. It is lab/reference engineering work, not a production
 hardening certification or employment claim.
 
 The bounded core is **integration-tested** on real Ubuntu 24.04 and AlmaLinux 9.8
-ARM64 VMs and is a **v0.1.0 candidate**, not a published release. Both profiles
+ARM64 VMs. Both profiles
 passed convergence, zero-change idempotence, security/service assertions,
 invalid-input rejection, content change/rollback, patch/reboot verification and
 scoped teardown. Controller gates passed 74 tests and the clean-clone quickstart.
-Publication, hosted CI and release remain pending. The
+The [public repository](https://github.com/Yash-PK/ops-linux-fleet-automation) and
+[hosted controller CI](https://github.com/Yash-PK/ops-linux-fleet-automation/actions/runs/37614900304)
+are verified for source revision `627e25c38de2`. Versioned releases require the
+exact tagged revision's CI to pass as well as both VM evidence gates. The
 [validation report](docs/validation.md) records exact tested revisions, an archived
 failure and environment limits; [core acceptance](docs/acceptance.md) defines the
 gates.

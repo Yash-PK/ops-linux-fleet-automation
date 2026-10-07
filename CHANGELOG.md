@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v0.1.0 candidate
+## v0.1.0
 
 - Added an explicitly owned Lima VZ provider and separate Ubuntu/AlmaLinux targets
   with repository-local state, image pins and strict seeded SSH trust.
@@ -19,5 +19,6 @@
 - Passed the documented controller quickstart from a clean clone and removed its
   scratch directory. Documented reviewed evidence commits between guest profiles.
 
-The bounded core is integration-tested. Publication, hosted CI and release are
-pending; this candidate entry does not claim an existing v0.1.0 release.
+The bounded core is integration-tested and public controller CI passed. The
+release gate also requires CI on the exact tagged revision. Published tags and
+release notes are listed on the repository's GitHub Releases page.

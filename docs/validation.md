@@ -1,9 +1,11 @@
 # Validation report
 
-Status: **integration-tested**, **v0.1.0 candidate**. Both required real-VM
+Status: **integration-tested and published**. Both required real-VM
 profiles passed the bounded core. Controller validation and a clean-clone
-quickstart passed. Final outgoing review, GitHub publication, hosted CI and a
-versioned release remain pending; no release or remote success is claimed.
+quickstart passed. Outgoing review, secret scans, public publication and hosted
+controller CI passed for `627e25c38de2ef44f43416e171102eaae3bc20ca`. A versioned
+release additionally requires CI to pass on the exact revision selected for its
+tag; later evidence/documentation commits retain the original VM source identities.
 
 ## Recorded source runs
 
@@ -14,7 +16,8 @@ versioned release remain pending; no release or remote success is claimed.
 | Ubuntu 24.04 ARM64 VM | `c52155a5c15b04bdb2a85746b385da0243ecef93` | [Passed](../evidence/c52155a5c15b-ubuntu-vm.json): all nine workflow steps, authenticated boot, lifecycle and scoped teardown |
 | AlmaLinux 9.8 ARM64 VM | `e333e1c8c37b107fb6e99924c869555acca0ad68` | [Passed](../evidence/e333e1c8c37b-alma-vm.json): all nine workflow steps, authenticated boot, lifecycle and scoped teardown |
 | Earlier Ubuntu failure | `8db4d22e1c567943ed80e2e8fe6ceebdc56d0fb7` | [Failed report retained](../evidence/8db4d22e1c56-ubuntu-vm.json): enabled firewall unit inactive after reboot; cleanup passed; corrected source was tested in the later passing Ubuntu run |
-| GitHub publication / CI / release | None credited | Not created / not run / no release |
+| Public publication and controller CI | `627e25c38de2ef44f43416e171102eaae3bc20ca` | Owner `Yash-PK`, PUBLIC, default branch `main`, remote SHA verified; [CI passed](https://github.com/Yash-PK/ops-linux-fleet-automation/actions/runs/37614900304); [downloaded Linux artifact](../evidence/627e25c38de2-ci-linux.json) |
+| Final publishing clean clone | `627e25c38de2ef44f43416e171102eaae3bc20ca` | [Passed](../evidence/627e25c38de2-clean-clone.json), temporary checkout removed |
 
 The two passing VM reports have the same implementation SHA-256:
 `391a99a45747322a4358e199d1454d2b29f175e171592995cae890761137bb0d`.
@@ -97,7 +100,7 @@ transaction trace was not captured. The fresh `c52155a5c15b` Ubuntu lifecycle,
 including verification before repair, passed and provides evidence of the corrected
 behavior. [ADR 0001](adr/0001.md) records the upstream basis for this choice.
 
-## Cleanup and remaining publication gates
+## Cleanup and release gates
 
 Both successful integration guests were deleted by the ownership-scoped provider,
 and both reports record `cleanup_passed: true`. The clean-clone scratch checkout
@@ -120,6 +123,13 @@ were created by these profiles.
    establish macOS VZ integration. Create v0.1.0 only after its release gates pass;
    it remains a candidate until publication and release verification are recorded.
 
-Next task: finish the outgoing review and publish the gated repository, then
-inspect its exact-revision CI before any release claim. No cloud apply, paid
-services, container publishing or host configuration changes are authorized.
+Public secret scanning, push protection and private vulnerability reporting were
+enabled and verified on this repository without paid features or account changes.
+No ruleset was applied: a proposed maintainer policy is to require the `validate`
+job on pull requests while preserving an explicit maintainer bypass path. It
+would supplement, not replace, the real VM release-evidence gate.
+
+Continuation: inspect Git status and the current remote/tag CI before preparing a
+new release. [GitHub Releases](https://github.com/Yash-PK/ops-linux-fleet-automation/releases)
+is authoritative for published tags. No cloud apply, paid services, container
+publishing or host configuration changes are authorized.
