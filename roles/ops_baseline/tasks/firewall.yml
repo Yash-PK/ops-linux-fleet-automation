@@ -1,0 +1,55 @@
+---
+- name: Create directory for the owned Ubuntu firewall table
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Install validated Ubuntu rules touching only the ops_fleet table
+  ansible.builtin.template:
+    src: ops-fleet.nft.j2
+    dest: /etc/nftables.d/ops-fleet.nft
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/nft --check --file %s
+  when: ansible_facts.distribution == 'Ubuntu'
+  notify: Reload owned nftables rules
+
+- name: Persist owned firewall rules with a dedicated systemd unit
+  ansible.builtin.template:
+    src: ops-baseline-firewall.service.j2
+    dest: /etc/systemd/system/ops-baseline-firewall.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_facts.distribution == 'Ubuntu'
+  notify: Reload owned nftables rules
+
+- name: Enable the Ubuntu owned firewall unit
+  ansible.builtin.systemd_service:
+    name: ops-baseline-firewall
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Start and enable AlmaLinux firewalld
+  ansible.builtin.systemd_service:
+    name: firewalld
+    state: started
+    enabled: true
+  when: ansible_facts.distribution == 'AlmaLinux'
+
+- name: Preserve SSH and allow the guest HTTP service in AlmaLinux
+  ansible.posix.firewalld:
+    zone: public
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: [ssh, http]
+  when: ansible_facts.distribution == 'AlmaLinux'

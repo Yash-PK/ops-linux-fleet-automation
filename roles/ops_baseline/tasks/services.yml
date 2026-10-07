@@ -1,0 +1,66 @@
+---
+- name: Validate chrony within the distribution security policy before atomic install
+  block:
+    - name: Allocate a root-only temporary candidate beside the chrony configuration
+      ansible.builtin.tempfile:
+        state: file
+        path: "{{ ops_baseline_chrony_config | dirname }}"
+        prefix: chrony.ops-candidate-
+        suffix: .conf
+      register: ops_baseline_chrony_candidate
+      # Staging is removed in always; only the permanent copy reports a change.
+      changed_when: false
+
+    - name: Render the temporary chrony candidate without changing the active file
+      ansible.builtin.template:
+        src: chrony.conf.j2
+        dest: "{{ ops_baseline_chrony_candidate.path }}"
+        owner: root
+        group: root
+        mode: '0600'
+      changed_when: false
+
+    - name: Validate the candidate under the unchanged chronyd security confinement
+      ansible.builtin.command:
+        argv: [/usr/sbin/chronyd, -p, -f, "{{ ops_baseline_chrony_candidate.path }}"]
+      changed_when: false
+
+    - name: Atomically install the validated chrony configuration
+      ansible.builtin.copy:
+        src: "{{ ops_baseline_chrony_candidate.path }}"
+        remote_src: true
+        dest: "{{ ops_baseline_chrony_config }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart chrony
+  always:
+    - name: Remove only the allocated temporary chrony candidate
+      ansible.builtin.file:
+        path: "{{ ops_baseline_chrony_candidate.path }}"
+        state: absent
+      when: ops_baseline_chrony_candidate.path is defined
+      changed_when: false
+
+- name: Enable the distribution chrony service
+  ansible.builtin.systemd_service:
+    name: "{{ ops_baseline_chrony_service }}"
+    state: started
+    enabled: true
+
+- name: Create journald drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure bounded persistent guest journal retention
+  ansible.builtin.template:
+    src: journald.conf.j2
+    dest: /etc/systemd/journald.conf.d/60-ops-baseline.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart journald

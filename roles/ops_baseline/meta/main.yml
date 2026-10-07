@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: Yash Pradip Khaire
+  description: Baseline for explicitly owned disposable Ubuntu and AlmaLinux VMs
+  license: MIT
+  min_ansible_version: "2.21"
+  platforms:
+    - name: Ubuntu
+      versions: [noble]
+    - name: EL
+      versions: ["9"]
+dependencies: []

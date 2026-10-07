@@ -1,0 +1,15 @@
+[Unit]
+Description=Owned ops-fleet nftables policy
+Before=network-pre.target
+Wants=network-pre.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft --file /etc/nftables.d/ops-fleet.nft
+ExecReload=/usr/sbin/nft --file /etc/nftables.d/ops-fleet.nft
+# No ExecStop flush: stopping this unit must not remove firewall protection.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "portfolio": "ops-linux-devops-portfolio",
+  "repository": "ops-linux-fleet-automation",
+  "owner": "Yash-PK",
+  "visibility": "public",
+  "publish_container_packages": false,
+  "allow_cloud_resource_creation": false,
+  "allow_billable_services": false,
+  "allow_host_configuration_changes": false
+}

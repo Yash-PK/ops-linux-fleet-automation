@@ -1,0 +1,16 @@
+---
+- name: Install Ubuntu packages without upgrading unrelated packages
+  ansible.builtin.apt:
+    name: "{{ ops_baseline_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 180
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Install AlmaLinux packages without upgrading unrelated packages
+  ansible.builtin.dnf:
+    name: "{{ ops_baseline_packages }}"
+    state: present
+    lock_timeout: 180
+  when: ansible_facts.distribution == 'AlmaLinux'

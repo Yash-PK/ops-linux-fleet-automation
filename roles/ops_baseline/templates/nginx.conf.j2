@@ -1,0 +1,25 @@
+user {{ ops_baseline_nginx_user }};
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log warn;
+events { worker_connections 256; }
+http {
+    include /etc/nginx/mime.types;
+    default_type text/plain;
+    server_tokens off;
+    sendfile on;
+    keepalive_timeout 15;
+    client_max_body_size 1k;
+    access_log /var/log/nginx/access.log;
+    server {
+        listen {{ ops_baseline_web_port }} default_server;
+        server_name _;
+        root /usr/share/nginx/html;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Content-Security-Policy "default-src 'none'; frame-ancestors 'none'" always;
+        location / {
+            limit_except GET { deny all; }
+            try_files $uri $uri/ =404;
+        }
+    }
+}

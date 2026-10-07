@@ -1,0 +1,57 @@
+---
+- name: Create the limited observer group
+  ansible.builtin.group:
+    name: "{{ ops_baseline_observer_group }}"
+    state: present
+
+- name: Create password-locked observer without changing the management account
+  ansible.builtin.user:
+    name: "{{ ops_baseline_observer_user }}"
+    group: "{{ ops_baseline_observer_group }}"
+    shell: /bin/bash
+    create_home: true
+    password_lock: true
+    state: present
+
+- name: Install one-command observer sudo policy after syntax validation
+  ansible.builtin.template:
+    src: observer-sudoers.j2
+    dest: /etc/sudoers.d/ops-observer
+    owner: root
+    group: root
+    mode: '0440'
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Ensure SSH drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Require the distro SSH drop-in include before policy installation
+  ansible.builtin.command:
+    argv: [grep, -E, '^Include[[:space:]]+/etc/ssh/sshd_config.d/\*\.conf', /etc/ssh/sshd_config]
+  changed_when: false
+
+- name: Install an early SSH policy drop-in after syntax validation
+  ansible.builtin.template:
+    src: ssh-policy.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-ops-baseline.conf
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload validated SSH
+
+- name: Validate the combined SSH configuration before any reload
+  ansible.builtin.command:
+    argv: [/usr/sbin/sshd, -t]
+  changed_when: false
+
+- name: Preserve and enable management SSH service
+  ansible.builtin.systemd_service:
+    name: "{{ ops_baseline_ssh_service }}"
+    state: started
+    enabled: true

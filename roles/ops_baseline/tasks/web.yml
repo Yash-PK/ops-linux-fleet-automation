@@ -1,0 +1,66 @@
+---
+- name: Install complete validated lab nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/nginx -t -c %s
+  notify: Reload nginx
+
+- name: Ensure the selected static web root exists on both distributions
+  ansible.builtin.file:
+    path: /usr/share/nginx/html
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install static identifiable lab content in the distro web root
+  ansible.builtin.copy:
+    content: "{{ ops_baseline_web_content }}\n"
+    dest: /usr/share/nginx/html/index.html
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload nginx
+
+- name: Inspect SELinux labels without changing policy
+  ansible.builtin.command:
+    argv: [/usr/sbin/restorecon, -nRv, /etc/nginx, /usr/share/nginx/html]
+  register: ops_baseline_selinux_label_check
+  changed_when: false
+  when: ansible_facts.distribution == 'AlmaLinux'
+
+- name: Restore expected SELinux labels only when drift exists
+  ansible.builtin.command:
+    argv: [/usr/sbin/restorecon, -Rv, /etc/nginx, /usr/share/nginx/html]
+  changed_when: true
+  when:
+    - ansible_facts.distribution == 'AlmaLinux'
+    - ops_baseline_selinux_label_check.stdout | default('') | length > 0
+
+- name: Create nginx systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Restrict the nginx service without disabling kernel security controls
+  ansible.builtin.template:
+    src: nginx-sandbox.conf.j2
+    dest: /etc/systemd/system/nginx.service.d/60-ops-baseline.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart sandboxed nginx
+
+- name: Enable and start nginx with distro non-root workers
+  ansible.builtin.systemd_service:
+    name: nginx
+    daemon_reload: true
+    state: started
+    enabled: true

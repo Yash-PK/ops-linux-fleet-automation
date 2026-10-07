@@ -1,0 +1,7 @@
+---
+ops_baseline_observer_user: ops-observer
+ops_baseline_observer_group: ops-observers
+ops_baseline_web_port: 80
+ops_baseline_web_content: ops-fleet baseline v1
+ops_baseline_journal_max_mib: 64
+ops_baseline_patch_confirm: ""

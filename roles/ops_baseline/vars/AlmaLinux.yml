@@ -1,0 +1,18 @@
+---
+ops_baseline_packages:
+  - sudo
+  - openssh-server
+  - chrony
+  - nginx
+  - firewalld
+  - python3-firewall
+  - python3-libselinux
+  - policycoreutils
+  - curl
+  - acl
+ops_baseline_ssh_service: sshd
+ops_baseline_chrony_service: chronyd
+ops_baseline_chrony_config: /etc/chrony.conf
+ops_baseline_ntp_pool: 2.almalinux.pool.ntp.org
+ops_baseline_nginx_user: nginx
+ops_baseline_firewall_service: firewalld

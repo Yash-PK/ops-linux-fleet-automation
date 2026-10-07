@@ -1,0 +1,19 @@
+---
+- name: Require a nonempty explicitly scoped inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Apply the shared inventory boundary
+      ansible.builtin.import_tasks: tasks/inventory_guard.yml
+
+- name: Converge one explicitly owned fleet VM at a time
+  hosts: fleet_lab
+  gather_facts: false
+  become: true
+  serial: 1
+  max_fail_percentage: 0
+  any_errors_fatal: true
+  roles:
+    - ops_baseline

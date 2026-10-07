@@ -1,0 +1,24 @@
+---
+- name: Require a nonempty explicitly scoped inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Apply the shared inventory boundary
+      ansible.builtin.import_tasks: tasks/inventory_guard.yml
+
+- name: Verify an explicitly owned fleet VM without changing desired state
+  hosts: fleet_lab
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  pre_tasks:
+    - name: Enforce the same target and input preflight for verification
+      ansible.builtin.import_role:
+        name: ops_baseline
+        tasks_from: preflight
+  tasks:
+    - name: Verify desired state through the shared read-only assertions
+      ansible.builtin.import_tasks: tasks/verify-state.yml

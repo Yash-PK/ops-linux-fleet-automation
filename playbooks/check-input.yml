@@ -1,0 +1,11 @@
+---
+- name: Validate baseline input on the controller without host provisioning
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Exercise the same pure input assertions used by the real role
+      ansible.builtin.import_role:
+        name: ops_baseline
+        tasks_from: validate_inputs

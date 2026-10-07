@@ -1,0 +1,88 @@
+---
+- name: Require explicit inventoried disposable SSH target before contact
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname in groups.get('fleet_lab', [])
+      - inventory_hostname in ['ops-fleet-ubuntu', 'ops-fleet-alma']
+      - ops_lab_owned | default(false) is sameas true
+      - ops_lab_id | default('') == 'ops-fleet-reference'
+      - ansible_connection | default('') == 'ssh'
+      - ansible_host | default('') == '127.0.0.1'
+      - ansible_port | default(0) is integer
+      - ansible_port | default(0) >= 1024
+      - ansible_port | default(0) <= 65535
+    quiet: true
+    fail_msg: Target is not an explicitly inventoried owned fleet lab VM
+
+- name: Validate configuration before reading target metadata
+  ansible.builtin.import_tasks: validate_inputs.yml
+
+- name: Inspect fixed guest ownership marker without following links
+  ansible.builtin.stat:
+    path: /etc/ops-fleet-lab.json
+    follow: false
+  become: false
+  register: ops_baseline_marker_stat
+
+- name: Require a root-owned regular guest marker
+  ansible.builtin.assert:
+    that:
+      - ops_baseline_marker_stat.stat.exists
+      - ops_baseline_marker_stat.stat.isreg | default(false)
+      - not ops_baseline_marker_stat.stat.islnk | default(false)
+      - ops_baseline_marker_stat.stat.uid | default(-1) == 0
+      - ops_baseline_marker_stat.stat.size | default(0) <= 2048
+      - ops_baseline_marker_stat.stat.mode | default('') in ['0600', '0640', '0644']
+    quiet: true
+
+- name: Read the guest ownership marker
+  ansible.builtin.slurp:
+    src: /etc/ops-fleet-lab.json
+  become: false
+  register: ops_baseline_marker
+
+- name: Match guest marker to the controller-owned lab
+  ansible.builtin.assert:
+    that:
+      - (ops_baseline_marker.content | b64decode | from_json).lab_id == ops_lab_id
+      - (ops_baseline_marker.content | b64decode | from_json).managed_by == 'ops-linux-fleet-automation'
+    quiet: true
+
+- name: Gather only distribution and required security facts
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - distribution
+      - system
+      - service_mgr
+      - apparmor
+  become: false
+
+- name: Read AlmaLinux kernel SELinux enforcement before package mutation
+  ansible.builtin.command:
+    argv: [getenforce]
+  become: false
+  changed_when: false
+  register: ops_baseline_initial_selinux
+  when: ansible_facts.distribution == 'AlmaLinux'
+
+- name: Require the supported Linux systemd distribution
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.system == 'Linux'
+      - ansible_facts.service_mgr == 'systemd'
+      - >-
+        (ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_version == '24.04')
+        or (ansible_facts.distribution == 'AlmaLinux' and ansible_facts.distribution_major_version == '9')
+      - >-
+        ansible_facts.distribution != 'Ubuntu'
+        or ansible_facts.apparmor.status | default('unavailable') == 'enabled'
+      - >-
+        ansible_facts.distribution != 'AlmaLinux'
+        or ops_baseline_initial_selinux.stdout | default('unavailable') == 'Enforcing'
+    quiet: true
+    fail_msg: Unsupported OS or security control unavailable; never disable the control to continue
+
+- name: Load explicit distribution differences
+  ansible.builtin.include_vars: "{{ ansible_facts.distribution }}.yml"

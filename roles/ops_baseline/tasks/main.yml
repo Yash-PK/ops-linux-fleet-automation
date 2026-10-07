@@ -1,0 +1,38 @@
+---
+- name: Enforce ownership configuration and security preflight
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Install distribution packages
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Configure scoped account and SSH policy
+  ansible.builtin.import_tasks: accounts.yml
+
+- name: Configure time and journal services
+  ansible.builtin.import_tasks: services.yml
+
+- name: Configure native firewall
+  ansible.builtin.import_tasks: firewall.yml
+
+- name: Configure hardened static web service
+  ansible.builtin.import_tasks: web.yml
+
+- name: Apply validated service changes before health checks
+  ansible.builtin.meta: flush_handlers
+
+- name: Require the configured service response
+  ansible.builtin.uri:
+    url: http://127.0.0.1:80/
+    return_content: true
+    status_code: 200
+    timeout: 10
+  register: ops_baseline_response
+  retries: 5
+  delay: 2
+  until: ops_baseline_response.status | default(0) == 200
+
+- name: Assert identifiable content after converge
+  ansible.builtin.assert:
+    that:
+      - ops_baseline_response.content == ops_baseline_web_content + '\n'
+    quiet: true

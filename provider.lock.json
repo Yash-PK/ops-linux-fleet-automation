@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-07",
+  "tool": {
+    "name": "lima",
+    "version": "2.2.1",
+    "release_url": "https://github.com/lima-vm/lima/releases/tag/v2.2.1",
+    "platforms": {
+      "Darwin-arm64": {
+        "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+        "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e",
+        "member": "./bin/limactl",
+        "guestagent_member": "./share/lima/lima-guestagent.Linux-aarch64.gz",
+        "license_member": "./share/doc/lima/LICENSE",
+        "bytes": 38328082,
+        "verification": "Official GitHub release assets[].digest matched independently hashed complete archive; archive member paths inspected"
+      }
+    }
+  },
+  "images": {
+    "ubuntu": {
+      "name": "Ubuntu Server 24.04 LTS cloud image",
+      "version": "24.04-20260926",
+      "arch": "aarch64",
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.img",
+      "sha256": "1d6bffe64b848468ac97f821d369a4846d983de1800ccf6b5ec8853e85cefc55",
+      "checksum_url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+      "bytes": 620224512,
+      "verification": "Official SHA256SUMS over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+    },
+    "alma": {
+      "name": "AlmaLinux 9.8 GenericCloud",
+      "version": "9.8-20261005",
+      "arch": "aarch64",
+      "url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/AlmaLinux-9-GenericCloud-9.8-20261005.aarch64.qcow2",
+      "sha256": "15cf8257cb3c293268898309fe9f7d70e893b1eddff99bac9d7e53a2155d00ce",
+      "checksum_url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/CHECKSUM",
+      "bytes": 483262464,
+      "verification": "Official CHECKSUM over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+    }
+  }
+}

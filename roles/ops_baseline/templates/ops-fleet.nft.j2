@@ -1,0 +1,19 @@
+#!/usr/sbin/nft -f
+# Atomic replacement of this lab-owned table only; never flush the global ruleset.
+add table inet ops_fleet
+flush table inet ops_fleet
+table inet ops_fleet {
+    chain input {
+        type filter hook input priority 0; policy drop;
+        iifname "lo" accept
+        ct state established,related accept
+        ct state invalid drop
+        tcp dport { 22, {{ ops_baseline_web_port }} } accept
+        ip protocol icmp accept
+        meta l4proto ipv6-icmp accept
+        udp sport 67 udp dport 68 accept
+        udp sport 547 udp dport 546 accept
+    }
+    chain forward { type filter hook forward priority 0; policy drop; }
+    chain output { type filter hook output priority 0; policy accept; }
+}

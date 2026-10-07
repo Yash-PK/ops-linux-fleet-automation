@@ -1,0 +1,23 @@
+---
+- name: Reject an absent empty or oversized fleet group
+  ansible.builtin.assert:
+    that:
+      - groups.get('fleet_lab', []) | length >= 1
+      - groups.get('fleet_lab', []) | length <= 2
+      - groups.get('fleet_lab', []) | difference(['ops-fleet-ubuntu', 'ops-fleet-alma']) | length == 0
+    quiet: true
+    fail_msg: Supply the explicit ignored lab inventory; no hosts were provisioned
+
+- name: Reject targets outside the loopback lab transport before contact
+  ansible.builtin.assert:
+    that:
+      - hostvars[item].ops_lab_owned | default(false) is sameas true
+      - hostvars[item].ops_lab_id | default('') == 'ops-fleet-reference'
+      - hostvars[item].ansible_connection | default('') == 'ssh'
+      - hostvars[item].ansible_host | default('') == '127.0.0.1'
+      - hostvars[item].ansible_port | default(0) is integer
+      - hostvars[item].ansible_port | default(0) >= 1024
+      - hostvars[item].ansible_port | default(0) <= 65535
+    quiet: true
+    fail_msg: Target is not an explicitly inventoried owned loopback SSH lab VM
+  loop: "{{ groups.get('fleet_lab', []) }}"

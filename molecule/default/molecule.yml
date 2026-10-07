@@ -1,0 +1,35 @@
+---
+# Real VMs are explicitly started/stopped by scripts/lab.py. No stub lifecycle.
+ansible:
+  executor:
+    backend: ansible-playbook
+    args:
+      ansible_playbook:
+        - --inventory
+        - ${OPS_FLEET_INVENTORY}
+  env:
+    ANSIBLE_HOST_KEY_CHECKING: 'True'
+  cfg:
+    defaults:
+      home: ${MOLECULE_PROJECT_DIRECTORY}/.runtime/ansible-home
+      local_tmp: ${MOLECULE_PROJECT_DIRECTORY}/.runtime/ansible-tmp
+      inventory: ${OPS_FLEET_INVENTORY}
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/roles
+      collections_path: ${MOLECULE_PROJECT_DIRECTORY}/.ansible/collections
+      host_key_checking: true
+      interpreter_python: /usr/bin/python3
+      inject_facts_as_vars: false
+      retry_files_enabled: false
+    ssh_connection:
+      pipelining: true
+  playbooks:
+    converge: ../../playbooks/site.yml
+    verify: ../../playbooks/verify.yml
+scenario:
+  test_sequence:
+    - syntax
+    - converge
+    - idempotence
+    - verify
+verifier:
+  name: ansible

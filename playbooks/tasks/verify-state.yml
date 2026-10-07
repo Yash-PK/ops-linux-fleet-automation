@@ -1,0 +1,195 @@
+---
+- name: Validate complete SSH nginx and sudo configuration
+  ansible.builtin.command:
+    argv: "{{ item }}"
+  loop:
+    - [/usr/sbin/sshd, -t]
+    - [/usr/sbin/nginx, -t]
+    - [/usr/sbin/visudo, -cf, /etc/sudoers.d/ops-observer]
+  changed_when: false
+
+- name: Inspect enabled and active baseline services
+  ansible.builtin.command:
+    argv: [systemctl, show, --property=ActiveState, --property=UnitFileState, "{{ item }}"]
+  loop:
+    - "{{ ops_baseline_ssh_service }}"
+    - "{{ ops_baseline_chrony_service }}"
+    - "{{ ops_baseline_firewall_service }}"
+    - nginx
+  changed_when: false
+  register: ops_baseline_service_states
+
+- name: Assert services are active and enabled
+  ansible.builtin.assert:
+    that:
+      - "'ActiveState=active' in item.stdout_lines"
+      - "'UnitFileState=enabled' in item.stdout_lines"
+    quiet: true
+  loop: "{{ ops_baseline_service_states.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Inspect effective SSH policy
+  ansible.builtin.command:
+    argv: [/usr/sbin/sshd, -T]
+  changed_when: false
+  register: ops_baseline_effective_ssh
+
+- name: Verify effective SSH restrictions while keeping public-key access
+  ansible.builtin.assert:
+    that:
+      - "'permitrootlogin no' in ops_baseline_effective_ssh.stdout_lines"
+      - "'passwordauthentication no' in ops_baseline_effective_ssh.stdout_lines"
+      - "'kbdinteractiveauthentication no' in ops_baseline_effective_ssh.stdout_lines"
+      - "'pubkeyauthentication yes' in ops_baseline_effective_ssh.stdout_lines"
+      - "'x11forwarding no' in ops_baseline_effective_ssh.stdout_lines"
+    quiet: true
+
+- name: Read the actual HTTP response and headers inside the guest
+  ansible.builtin.uri:
+    url: http://127.0.0.1:80/
+    status_code: 200
+    return_content: true
+    timeout: 10
+  register: ops_baseline_verified_response
+
+- name: Assert exact content and relevant web hardening headers
+  ansible.builtin.assert:
+    that:
+      - ops_baseline_verified_response.content == ops_baseline_web_content + '\n'
+      - ops_baseline_verified_response.x_content_type_options == 'nosniff'
+      - ops_baseline_verified_response.server == 'nginx'
+      - >-
+        "default-src 'none'" in ops_baseline_verified_response.content_security_policy
+    quiet: true
+
+- name: Assert the web service rejects modifying HTTP methods
+  ansible.builtin.uri:
+    url: http://127.0.0.1:80/
+    method: POST
+    status_code: 403
+    timeout: 10
+
+- name: Inspect effective nginx systemd sandbox
+  ansible.builtin.command:
+    argv: [systemctl, show, nginx, --property=NoNewPrivileges, --property=PrivateTmp, --property=ProtectSystem]
+  changed_when: false
+  register: ops_baseline_nginx_sandbox
+
+- name: Require effective nginx sandbox properties
+  ansible.builtin.assert:
+    that:
+      - "'NoNewPrivileges=yes' in ops_baseline_nginx_sandbox.stdout_lines"
+      - "'PrivateTmp=yes' in ops_baseline_nginx_sandbox.stdout_lines"
+      - "'ProtectSystem=full' in ops_baseline_nginx_sandbox.stdout_lines"
+    quiet: true
+
+- name: Inspect nginx worker ownership
+  ansible.builtin.command:
+    argv: [ps, -C, nginx, -o, 'user=,args=']
+  changed_when: false
+  register: ops_baseline_processes
+  no_log: true
+
+- name: Require an unprivileged nginx worker
+  ansible.builtin.assert:
+    that:
+      - >-
+        ops_baseline_processes.stdout_lines
+        | select('match', '^' + ops_baseline_nginx_user + '\s+nginx: worker process')
+        | list | length > 0
+    quiet: true
+
+- name: Prove the observer may read nginx service status
+  ansible.builtin.command:
+    argv: [/usr/bin/sudo, -n, /usr/bin/systemctl, --no-pager, status, nginx]
+  become: true
+  become_user: "{{ ops_baseline_observer_user }}"
+  changed_when: false
+
+- name: Prove the observer cannot run an unrelated privileged command
+  ansible.builtin.command:
+    argv: [/usr/bin/sudo, -n, /usr/bin/id]
+  become: true
+  become_user: "{{ ops_baseline_observer_user }}"
+  changed_when: false
+  register: ops_baseline_denied_sudo
+  failed_when: ops_baseline_denied_sudo.rc == 0
+
+- name: Inspect observer password lock without reading shadow contents
+  ansible.builtin.command:
+    argv: [passwd, -S, "{{ ops_baseline_observer_user }}"]
+  changed_when: false
+  register: ops_baseline_password_status
+
+- name: Require the observer password to remain locked
+  ansible.builtin.assert:
+    that:
+      - ops_baseline_password_status.stdout.split()[1] in ['L', 'LK']
+    quiet: true
+
+- name: Validate Ubuntu nftables syntax and active table
+  ansible.builtin.command:
+    argv: "{{ item }}"
+  loop:
+    - [/usr/sbin/nft, --check, --file, /etc/nftables.d/ops-fleet.nft]
+    - [/usr/sbin/nft, list, table, inet, ops_fleet]
+  changed_when: false
+  register: ops_baseline_nft_checks
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Verify Ubuntu owned firewall defaults and management ports
+  ansible.builtin.assert:
+    that:
+      - "'policy drop' in ops_baseline_nft_checks.results[1].stdout"
+      - "'22, 80' in ops_baseline_nft_checks.results[1].stdout"
+    quiet: true
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Verify AlmaLinux HTTP and SSH are allowed at runtime and reboot
+  ansible.builtin.command:
+    argv: "{{ item }}"
+  loop:
+    - [firewall-cmd, --zone=public, --query-service=http]
+    - [firewall-cmd, --zone=public, --query-service=ssh]
+    - [firewall-cmd, --permanent, --zone=public, --query-service=http]
+    - [firewall-cmd, --permanent, --zone=public, --query-service=ssh]
+  changed_when: false
+  when: ansible_facts.distribution == 'AlmaLinux'
+
+- name: Verify AlmaLinux SELinux remains enforcing
+  ansible.builtin.command:
+    argv: [getenforce]
+  changed_when: false
+  register: ops_baseline_selinux_mode
+  failed_when: ops_baseline_selinux_mode.stdout != 'Enforcing'
+  when: ansible_facts.distribution == 'AlmaLinux'
+
+- name: Verify Ubuntu AppArmor remains enabled
+  ansible.builtin.command:
+    argv: [aa-status, --enabled]
+  changed_when: false
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Inspect chrony tracking without promising upstream time synchronization
+  ansible.builtin.command:
+    argv: [chronyc, tracking]
+  changed_when: false
+
+- name: Require the journald service to be running
+  ansible.builtin.command:
+    argv: [systemctl, is-active, systemd-journald]
+  changed_when: false
+
+- name: Inspect effective journald configuration
+  ansible.builtin.command:
+    argv: [systemd-analyze, cat-config, systemd/journald.conf]
+  changed_when: false
+  register: ops_baseline_journal_config
+
+- name: Assert bounded persistent journal policy is present
+  ansible.builtin.assert:
+    that:
+      - "'Storage=persistent' in ops_baseline_journal_config.stdout"
+      - "('SystemMaxUse=' + (ops_baseline_journal_max_mib | string) + 'M') in ops_baseline_journal_config.stdout"
+    quiet: true

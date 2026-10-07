@@ -1,0 +1,16 @@
+---
+ops_baseline_packages:
+  - sudo
+  - openssh-server
+  - chrony
+  - nginx
+  - nftables
+  - apparmor-utils
+  - curl
+  - acl
+ops_baseline_ssh_service: ssh
+ops_baseline_chrony_service: chrony
+ops_baseline_chrony_config: /etc/chrony/chrony.conf
+ops_baseline_ntp_pool: ntp.ubuntu.com
+ops_baseline_nginx_user: www-data
+ops_baseline_firewall_service: ops-baseline-firewall

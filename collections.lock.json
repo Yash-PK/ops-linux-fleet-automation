@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-07",
+  "collections": [
+    {
+      "name": "ansible.posix",
+      "version": "2.2.2",
+      "url": "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/ansible-posix-2.2.2.tar.gz",
+      "sha256": "00a58c5d804c9adc99c3c3dc1b9f2246f4bb5f7337941440e0956f0e31c3b82b",
+      "requires_ansible": ">=2.16.0",
+      "dependencies": {},
+      "bytes": 166545,
+      "metadata_url": "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/ansible/posix/versions/2.2.2/",
+      "release_url": "https://github.com/ansible-collections/ansible.posix/releases/tag/2.2.2",
+      "verification": "Official Galaxy metadata artifact.sha256; bootstrap must independently verify downloaded archive before installation"
+    }
+  ]
+}

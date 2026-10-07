@@ -1,0 +1,56 @@
+---
+- name: Require a nonempty explicitly scoped inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Apply the shared inventory boundary
+      ansible.builtin.import_tasks: tasks/inventory_guard.yml
+
+- name: Patch and reboot only an explicitly confirmed disposable fleet VM
+  hosts: fleet_lab
+  gather_facts: false
+  become: true
+  serial: 1
+  max_fail_percentage: 0
+  any_errors_fatal: true
+  pre_tasks:
+    - name: Require explicit patch and reboot confirmation
+      ansible.builtin.assert:
+        that:
+          - ops_baseline_patch_confirm | default('') == 'ops-fleet-reference'
+          - ops_baseline_patch_reboot | default(false) is sameas true
+        quiet: true
+        fail_msg: Set explicit lab confirmation and reboot authorization for this optional profile
+    - name: Run ownership and supported-platform preflight
+      ansible.builtin.import_role:
+        name: ops_baseline
+        tasks_from: preflight
+  tasks:
+    - name: Apply Ubuntu guest upgrades in the confirmed maintenance window
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: true
+        lock_timeout: 180
+      when: ansible_facts.distribution == 'Ubuntu'
+    - name: Apply AlmaLinux guest upgrades in the confirmed maintenance window
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+        update_only: true
+        lock_timeout: 180
+      when: ansible_facts.distribution == 'AlmaLinux'
+    - name: Reboot and verify a changed boot identity using the supported module
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+        post_reboot_delay: 5
+        test_command: /usr/bin/systemctl is-active nginx
+    - name: Verify persisted desired state before any post-reboot repair
+      ansible.builtin.import_tasks: tasks/verify-state.yml
+    - name: Reassert desired configuration after reboot
+      ansible.builtin.import_role:
+        name: ops_baseline
+
+- name: Verify the patched guest
+  ansible.builtin.import_playbook: verify.yml
