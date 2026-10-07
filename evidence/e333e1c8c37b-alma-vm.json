@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "profile": "real-vm",
+  "distro": "alma",
+  "revision": "e333e1c8c37b107fb6e99924c869555acca0ad68",
+  "code_sha256": "391a99a45747322a4358e199d1454d2b29f175e171592995cae890761137bb0d",
+  "clean_at_start": true,
+  "started_at": "2026-10-07T09:48:49.875545+00:00",
+  "environment": {
+    "os": "Darwin",
+    "release": "25.6.0",
+    "architecture": "arm64",
+    "python": "3.14.7"
+  },
+  "provider": {
+    "schema_version": 1,
+    "verified_at": "2026-10-07",
+    "tool": {
+      "name": "lima",
+      "version": "2.2.1",
+      "release_url": "https://github.com/lima-vm/lima/releases/tag/v2.2.1",
+      "platforms": {
+        "Darwin-arm64": {
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+          "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e",
+          "member": "./bin/limactl",
+          "guestagent_member": "./share/lima/lima-guestagent.Linux-aarch64.gz",
+          "license_member": "./share/doc/lima/LICENSE",
+          "bytes": 38328082,
+          "verification": "Official GitHub release assets[].digest matched independently hashed complete archive; archive member paths inspected"
+        }
+      }
+    },
+    "images": {
+      "ubuntu": {
+        "name": "Ubuntu Server 24.04 LTS cloud image",
+        "version": "24.04-20260926",
+        "arch": "aarch64",
+        "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.img",
+        "sha256": "1d6bffe64b848468ac97f821d369a4846d983de1800ccf6b5ec8853e85cefc55",
+        "checksum_url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+        "bytes": 620224512,
+        "verification": "Official SHA256SUMS over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+      },
+      "alma": {
+        "name": "AlmaLinux 9.8 GenericCloud",
+        "version": "9.8-20261005",
+        "arch": "aarch64",
+        "url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/AlmaLinux-9-GenericCloud-9.8-20261005.aarch64.qcow2",
+        "sha256": "15cf8257cb3c293268898309fe9f7d70e893b1eddff99bac9d7e53a2155d00ce",
+        "checksum_url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/CHECKSUM",
+        "bytes": 483262464,
+        "verification": "Official CHECKSUM over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+      }
+    }
+  },
+  "tool_versions": {
+    "ansible-core": "2.21.5",
+    "ansible-lint": "26.9.0",
+    "molecule": "26.9.0"
+  },
+  "commands": [
+    {
+      "name": "ssh-reject-changed-key",
+      "argv": [
+        "/usr/bin/ssh",
+        "-o",
+        "StrictHostKeyChecking=yes",
+        "-o",
+        "NoHostAuthenticationForLocalhost=no",
+        "-o",
+        "UserKnownHostsFile=$REPO/.runtime/hostkey-negative-r8l7c5r4/known_hosts",
+        "-o",
+        "HostKeyAlias=ops-fleet-alma",
+        "-o",
+        "HostKeyAlgorithms=ssh-ed25519",
+        "-o",
+        "ControlMaster=no",
+        "-o",
+        "ControlPath=none",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "IdentityAgent=none",
+        "-F",
+        "$REPO/.runtime/lima/ops-fleet-alma/ssh.config",
+        "lima-ops-fleet-alma",
+        "true"
+      ],
+      "exit_code": 255,
+      "expected": "changed host key rejected",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 0.02,
+      "recaps": [],
+      "runtime_log": ".runtime/logs/integration-alma-ssh-reject-changed-key.log"
+    },
+    {
+      "name": "molecule",
+      "argv": [
+        "$REPO/.venv/bin/molecule",
+        "test",
+        "-s",
+        "default"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 36.456,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-alma             : ok=43   changed=20   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0",
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-alma             : ok=38   changed=0    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0",
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-alma             : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0"
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-molecule.log"
+    },
+    {
+      "name": "reject-invalid",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/site.yml",
+        "-e",
+        "@tests/fixtures/invalid-port.json"
+      ],
+      "exit_code": 2,
+      "expected": "policy rejection with zero changes",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 0.349,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=1    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-reject-invalid.log"
+    },
+    {
+      "name": "verify-unchanged",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/verify.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 3.996,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-verify-unchanged.log"
+    },
+    {
+      "name": "change",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/site.yml",
+        "-e",
+        "{\"ops_baseline_web_content\": \"ops-fleet changed v2\"}"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 6.651,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=39   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-change.log"
+    },
+    {
+      "name": "verify-change",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/verify.yml",
+        "-e",
+        "{\"ops_baseline_web_content\": \"ops-fleet changed v2\"}"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 3.89,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-verify-change.log"
+    },
+    {
+      "name": "restore",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/site.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 6.635,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=39   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-restore.log"
+    },
+    {
+      "name": "verify-restored",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/verify.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 3.924,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-verify-restored.log"
+    },
+    {
+      "name": "patch-reboot",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-alma.json",
+        "playbooks/patch.yml",
+        "-e",
+        "{\"ops_baseline_patch_confirm\": \"ops-fleet-reference\", \"ops_baseline_patch_reboot\": true}"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 46.331,
+      "recaps": [
+        "localhost                  : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-alma             : ok=105  changed=2    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-alma-patch-reboot.log"
+    }
+  ],
+  "cleanup_passed": true,
+  "passed": true,
+  "boot_authenticated": true,
+  "guest_metadata": {
+    "architecture": "aarch64",
+    "kernel_release": "5.14.0-687.54.1.el9_8.aarch64",
+    "os": {
+      "ID": "almalinux",
+      "NAME": "AlmaLinux",
+      "VERSION_ID": "9.8"
+    },
+    "package_manager": "rpm",
+    "package_versions": {
+      "chrony": "0:4.8-1.el9.aarch64",
+      "firewalld": "0:1.3.4-20.el9_8.noarch",
+      "nginx": "2:1.20.1-28.el9_8.6.alma.1.aarch64",
+      "openssh-server": "0:9.9p1-12.el9_8.alma.1.aarch64",
+      "selinux-policy": "0:38.1.75-2.el9_8.noarch"
+    },
+    "python_version": "3.9.25",
+    "schema_version": 1
+  },
+  "lifecycle_passed": true,
+  "finished_at": "2026-10-07T09:51:41.917024+00:00"
+}

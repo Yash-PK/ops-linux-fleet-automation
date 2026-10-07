@@ -6,11 +6,15 @@ provisioning, idempotence, security inspection, service reachability, rollback
 and reboot exercises. It is lab/reference engineering work, not a production
 hardening certification or employment claim.
 
-Implementation is in progress. Role and provider source exist; the required
-Ansible and real-VM gates are not yet credited as passed. Publication, CI and a
-versioned release are pending. The [validation report](docs/validation.md) is the
-authoritative result ledger, and [core acceptance](docs/acceptance.md) defines
-what must actually run before completion.
+The bounded core is **integration-tested** on real Ubuntu 24.04 and AlmaLinux 9.8
+ARM64 VMs and is a **v0.1.0 candidate**, not a published release. Both profiles
+passed convergence, zero-change idempotence, security/service assertions,
+invalid-input rejection, content change/rollback, patch/reboot verification and
+scoped teardown. Controller gates passed 74 tests and the clean-clone quickstart.
+Publication, hosted CI and release remain pending. The
+[validation report](docs/validation.md) records exact tested revisions, an archived
+failure and environment limits; [core acceptance](docs/acceptance.md) defines the
+gates.
 
 ## Architecture
 
@@ -41,7 +45,8 @@ See [architecture](docs/architecture.md) and [ADR 0001](docs/adr/0001.md).
 | Kernel security boundary | Require AppArmor enabled | Require SELinux enforcing; retain file labels |
 | Web workers | `www-data` | `nginx` |
 
-These are implementation targets, not yet passed distro integration claims.
+Both listed profiles passed the recorded VM integration. This does not establish
+other image builds, distributions or providers.
 The role also creates a locked `ops-observer` account/group, a precisely scoped
 sudo rule, validated SSH policy, bounded journald retention, chrony configuration,
 and nginx with non-root workers and systemd restrictions. Guest HTTP uses port 80;
@@ -106,18 +111,53 @@ requirements, not measured performance or memory-use claims. Provisioning and
 patching need internet access for the selected distributions' repositories; OS
 package versions are not frozen repository snapshots.
 
-The intended complete integration commands are:
+Publishable integration evidence requires a clean, committed working tree at the
+start of each run. A completed run writes a new report under `evidence/`, making
+the tree dirty. Review and commit that observed report before starting the next
+profile; running the two Make targets consecutively would correctly fail the
+second clean-source guard. Starting from a clean checkout:
 
 ```sh
+ubuntu_report="evidence/$(git rev-parse --short=12 HEAD)-ubuntu-vm.json"
 make integration LAB=ubuntu
+cat "$ubuntu_report"
+make security
+# Review the report and scan results; stage only this observed evidence file.
+git add -- "$ubuntu_report"
+git diff --cached --check
+git diff --cached --stat
+git commit -m "Record observed Ubuntu VM validation"
+
+alma_report="evidence/$(git rev-parse --short=12 HEAD)-alma-vm.json"
 make integration LAB=alma
+cat "$alma_report"
+make security
+git add -- "$alma_report"
+git diff --cached --check
+git diff --cached --stat
+git commit -m "Record observed AlmaLinux VM validation"
 ```
 
-This profile must exercise the real VM lifecycle, initial converge, zero-change
-second converge, assertions, invalid configuration, a content change/rollback and
-an explicitly scoped reboot/patch profile. Consult the validation report for which
-steps actually ran. It changes only the selected lab guest; it is not equivalent
-to the safe controller demo. Heavy profiles must remain sequential.
+Keep the existing Git identity. Inspect a failed report too; do not reinterpret
+failure as success. These report-only commits explain why the recorded Ubuntu
+and AlmaLinux source revisions differ while their implementation fingerprint is
+identical. The [validation report](docs/validation.md) links the actual runs.
+
+For iterative development without committing public evidence between profiles,
+use the explicit development mode instead:
+
+```sh
+.venv/bin/python scripts/integration.py --distro ubuntu \
+  --lab-id ops-fleet-reference --development --execute
+.venv/bin/python scripts/integration.py --distro alma \
+  --lab-id ops-fleet-reference --development --execute
+```
+
+Development mode records ignored `.runtime` diagnostics and never writes
+publishable evidence, even if its checks pass. It does not satisfy the release
+evidence gate. Both modes exercise real guest creation, configuration, rollback,
+patch/reboot and scoped deletion. They change the selected lab guest; they are
+separate from the safe controller demo. Heavy profiles remain sequential.
 
 For manual diagnosis, first inspect the provider dry run, then explicitly start
 the intended guest and select its exact inventory:
@@ -152,10 +192,12 @@ The optional patch play requires explicit `ops_baseline_patch_confirm` matching
 the lab ID and a boolean `ops_baseline_patch_reboot: true`; it updates guest
 packages and reboots with postchecks. Nothing schedules unattended maintenance.
 
-Package/time/firewall/service behavior and the effect of nginx restrictions must
-be verified on both real guests. A syntax pass does not prove them. The service
-checks assert content, headers, denied POST, unprivileged workers and effective
-policy. Firewall rule inspection is not proof of a denied external network path.
+The recorded real-guest runs verified package/time/firewall/service behavior and
+nginx restrictions on both profiles. A syntax pass alone does not prove them. The
+service checks assert content, headers, denied POST, unprivileged workers and
+effective policy. Shared guest-state checks run immediately after reboot, before
+reapplying configuration, so a repair cannot hide a persistence failure.
+Firewall rule inspection is not proof of a denied external network path.
 Chrony tracking output does not itself prove synchronization to a trusted source.
 
 ## Security and teardown
@@ -182,8 +224,11 @@ make teardown LAB=ubuntu
 Use the same explicit command with `--distro alma` for the other owned guest.
 The provider verifies inventory/resource ownership, stops a running target and
 deletes only that VM and its recorded per-instance configuration/trust files.
-Image caches and shared runtime metadata may remain. `make clean` reports retained
-state and does not silently remove VMs or credentials. Never use a blanket prune,
+Both recorded integration guests were deleted successfully. Approximately
+1.05 GiB of downloaded image caches was retained, alongside local tools and ignored
+private runtime metadata/credentials. Image caches and shared runtime metadata
+may remain after later runs too. `make clean` reports retained state and does not
+silently remove VMs or credentials. Never use a blanket prune,
 recursive deletion or ordinary global Lima home as a cleanup shortcut.
 
 ## Limits and review walkthrough
