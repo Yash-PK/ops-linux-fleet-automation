@@ -29,6 +29,16 @@
   when: ansible_facts.distribution == 'Ubuntu'
   notify: Reload owned nftables rules
 
+- name: Verify the installed Ubuntu firewall unit and dependencies before activation
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/systemd-analyze
+      - --recursive-errors=yes
+      - verify
+      - /etc/systemd/system/ops-baseline-firewall.service
+  changed_when: false
+  when: ansible_facts.distribution == 'Ubuntu'
+
 - name: Enable the Ubuntu owned firewall unit
   ansible.builtin.systemd_service:
     name: ops-baseline-firewall

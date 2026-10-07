@@ -40,6 +40,24 @@ exit nonzero and leave changed-task count zero. This does not substitute for Lin
 VM evidence. Molecule uses explicit real per-distro inventory and runs syntax,
 converge, idempotence and verification. No create/destroy stub is counted as a pass.
 
+## Recorded source runs
+
+- Revision `8db4d22e1c567943ed80e2e8fe6ceebdc56d0fb7` passed the
+  [controller gates](../evidence/8db4d22e1c56-local.json): doctor, all static checks,
+  74 tests, the documented input demo and working/staged/full-history scanning.
+- The same revision's [Ubuntu lifecycle](../evidence/8db4d22e1c56-ubuntu-vm.json)
+  passed strict SSH rejection of a wrong host key, Molecule, invalid input,
+  content change and rollback. It **failed** after patch/reboot: the enabled
+  `ops-baseline-firewall` unit was inactive. Verification ran before reapplying
+  configuration and therefore exposed the defect. Teardown succeeded. This run
+  does not satisfy the required Ubuntu integration gate.
+
+The firewall unit now declares early-boot dependencies explicitly and is checked
+with `systemd-analyze --recursive-errors=yes verify` before activation. The exact
+previous boot ordering cycle was not captured; that diagnosis is an inference
+from the unit dependencies. The failed report remains in history, and a new
+clean-source lifecycle run is required to prove the correction.
+
 ## Required gates before publication
 
 1. Finish locked bootstrap and record actual controller/provider versions. Run

@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "profile": "real-vm",
+  "distro": "ubuntu",
+  "revision": "8db4d22e1c567943ed80e2e8fe6ceebdc56d0fb7",
+  "code_sha256": "de6475817a2dc3e7494c4f2a674ee814058dcbf23e8f4e43df39d4da950963c8",
+  "clean_at_start": true,
+  "started_at": "2026-10-07T08:55:22.454865+00:00",
+  "environment": {
+    "os": "Darwin",
+    "release": "25.6.0",
+    "architecture": "arm64",
+    "python": "3.14.7"
+  },
+  "provider": {
+    "schema_version": 1,
+    "verified_at": "2026-10-07",
+    "tool": {
+      "name": "lima",
+      "version": "2.2.1",
+      "release_url": "https://github.com/lima-vm/lima/releases/tag/v2.2.1",
+      "platforms": {
+        "Darwin-arm64": {
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+          "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e",
+          "member": "./bin/limactl",
+          "guestagent_member": "./share/lima/lima-guestagent.Linux-aarch64.gz",
+          "license_member": "./share/doc/lima/LICENSE",
+          "bytes": 38328082,
+          "verification": "Official GitHub release assets[].digest matched independently hashed complete archive; archive member paths inspected"
+        }
+      }
+    },
+    "images": {
+      "ubuntu": {
+        "name": "Ubuntu Server 24.04 LTS cloud image",
+        "version": "24.04-20260926",
+        "arch": "aarch64",
+        "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.img",
+        "sha256": "1d6bffe64b848468ac97f821d369a4846d983de1800ccf6b5ec8853e85cefc55",
+        "checksum_url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+        "bytes": 620224512,
+        "verification": "Official SHA256SUMS over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+      },
+      "alma": {
+        "name": "AlmaLinux 9.8 GenericCloud",
+        "version": "9.8-20261005",
+        "arch": "aarch64",
+        "url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/AlmaLinux-9-GenericCloud-9.8-20261005.aarch64.qcow2",
+        "sha256": "15cf8257cb3c293268898309fe9f7d70e893b1eddff99bac9d7e53a2155d00ce",
+        "checksum_url": "https://repo.almalinux.org/almalinux/9.8/cloud/aarch64/images/CHECKSUM",
+        "bytes": 483262464,
+        "verification": "Official CHECKSUM over TLS and image HEAD 200; complete image hash and VM boot must be validated during bootstrap/integration"
+      }
+    }
+  },
+  "tool_versions": {
+    "ansible-core": "2.21.5",
+    "ansible-lint": "26.9.0",
+    "molecule": "26.9.0"
+  },
+  "commands": [
+    {
+      "name": "ssh-reject-changed-key",
+      "argv": [
+        "/usr/bin/ssh",
+        "-o",
+        "StrictHostKeyChecking=yes",
+        "-o",
+        "NoHostAuthenticationForLocalhost=no",
+        "-o",
+        "UserKnownHostsFile=$REPO/.runtime/hostkey-negative-i4_00pe3/known_hosts",
+        "-o",
+        "HostKeyAlias=ops-fleet-ubuntu",
+        "-o",
+        "HostKeyAlgorithms=ssh-ed25519",
+        "-o",
+        "ControlMaster=no",
+        "-o",
+        "ControlPath=none",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "IdentityAgent=none",
+        "-F",
+        "$REPO/.runtime/lima/ops-fleet-ubuntu/ssh.config",
+        "lima-ops-fleet-ubuntu",
+        "true"
+      ],
+      "exit_code": 255,
+      "expected": "changed host key rejected",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 0.038,
+      "recaps": [],
+      "runtime_log": ".runtime/logs/integration-ubuntu-ssh-reject-changed-key.log"
+    },
+    {
+      "name": "molecule",
+      "argv": [
+        "$REPO/.venv/bin/molecule",
+        "test",
+        "-s",
+        "default"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 35.656,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-ubuntu           : ok=44   changed=23   unreachable=0    failed=0    skipped=6    rescued=0    ignored=0",
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-ubuntu           : ok=38   changed=0    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0",
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0",
+        "ops-fleet-ubuntu           : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0"
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-molecule.log"
+    },
+    {
+      "name": "reject-invalid",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/site.yml",
+        "-e",
+        "@tests/fixtures/invalid-port.json"
+      ],
+      "exit_code": 2,
+      "expected": "policy rejection with zero changes",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 0.344,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=1    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-reject-invalid.log"
+    },
+    {
+      "name": "verify-unchanged",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/verify.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 3.719,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-verify-unchanged.log"
+    },
+    {
+      "name": "change",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/site.yml",
+        "-e",
+        "{\"ops_baseline_web_content\": \"ops-fleet changed v2\"}"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 7.081,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=39   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-change.log"
+    },
+    {
+      "name": "verify-change",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/verify.yml",
+        "-e",
+        "{\"ops_baseline_web_content\": \"ops-fleet changed v2\"}"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 3.704,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-verify-change.log"
+    },
+    {
+      "name": "restore",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/site.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 8.111,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=39   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-restore.log"
+    },
+    {
+      "name": "verify-restored",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/verify.yml"
+      ],
+      "exit_code": 0,
+      "expected": "exit zero",
+      "passed": true,
+      "timed_out": false,
+      "duration_seconds": 4.751,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=32   changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-verify-restored.log"
+    },
+    {
+      "name": "patch-reboot",
+      "argv": [
+        "$REPO/.venv/bin/ansible-playbook",
+        "-i",
+        "$REPO/.runtime/inventory-ubuntu.json",
+        "playbooks/patch.yml",
+        "-e",
+        "{\"ops_baseline_patch_confirm\": \"ops-fleet-reference\", \"ops_baseline_patch_reboot\": true}"
+      ],
+      "exit_code": 2,
+      "expected": "exit zero",
+      "passed": false,
+      "timed_out": false,
+      "duration_seconds": 28.049,
+      "recaps": [
+        "localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   ",
+        "ops-fleet-ubuntu           : ok=14   changed=2    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   "
+      ],
+      "runtime_log": ".runtime/logs/integration-ubuntu-patch-reboot.log"
+    }
+  ],
+  "cleanup_passed": true,
+  "passed": false,
+  "boot_authenticated": true,
+  "failure": "patch-reboot failed (exit 2); inspect ignored .runtime/logs/integration-ubuntu-patch-reboot.log",
+  "finished_at": "2026-10-07T08:57:12.759868+00:00"
+}
